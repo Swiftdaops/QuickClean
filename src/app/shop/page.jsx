@@ -1,0 +1,368 @@
+"use client";
+
+import React, { useEffect, useState, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import SearchBar from '@/components/SearchBar';
+import CategoriesFilter from '@/components/CategoriesFilter';
+import { CATEGORIES, findCategoryByKey } from '@/lib/categories';
+import { toast } from '@/components/ui/sonner';
+
+const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+function normalize(s = "") {
+
+	return (s || "")
+		.toString()
+		.toLowerCase()
+		.replace(/'s\b/g, "")
+		.replace(/[^a-z0-9]/g, "");
+}
+
+export default function ShopPage() {
+	const search = useSearchParams();
+	const storeQuery = search.get("store") || "";
+	const [loading, setLoading] = useState(true);
+	const [stores, setStores] = useState([]);
+	const [store, setStore] = useState(null);
+	const [products, setProducts] = useState([]);
+	const [error, setError] = useState(null);
+	const [selectedProduct, setSelectedProduct] = useState(null);
+	const router = useRouter();
+	const [expanded, setExpanded] = useState({});
+	const [searchTerm, setSearchTerm] = useState("");
+	const [category, setCategory] = useState('all');
+	const [cart, setCart] = useState({}); // { productId: quantity }
+	const [cartOpen, setCartOpen] = useState(false);
+
+
+	function addToCart(product) {
+		setCart((c) => {
+			const id = String(product._id);
+			const next = { ...c };
+			next[id] = (next[id] || 0) + 1;
+			return next;
+		});
+
+
+		setCartOpen(true);
+		toast.success(
+			<div className="flex items-center gap-3">
+				<div className="text-sm text-gray-500">Added</div>
+				<div className="font-semibold text-black dark:text-white truncate">{product.name || 'Item'}</div>
+			</div>
+		);
+	}
+
+	function removeFromCart(productId) {
+		setCart((c) => {
+			const next = { ...c };
+			delete next[String(productId)];
+			return next;
+		});
+	}
+
+	function cartCount() {
+		return Object.values(cart).reduce((s, v) => s + v, 0);
+	}
+
+	function inferCategoryFor(product) {
+		if (product.category) return product.category;
+		const name = (product.name || '') + ' ' + (product.description || '');
+		const s = name.toLowerCase();
+		if (s.match(/drink|cola|juice|beer|soda/)) return 'beverages';
+		if (s.match(/soap|detergent|clean|bleach|wash/)) return 'cleaning';
+		if (s.match(/phone|charger|electronic|tv|radio/)) return 'electronics';
+		if (s.match(/fruit|vegetable|yam|potato|tomato|onion/)) return 'produce';
+		if (s.match(/snack|chips|crisps|cookie|biscuit/)) return 'snacks';
+		return 'groceries';
+	}
+
+	function handleCheckout() {
+		if (!store) {
+			toast.error('Select a store before checkout');
+			return;
+		}
+
+		const entries = Object.entries(cart);
+		if (entries.length === 0) {
+			toast('Cart is empty');
+			return;
+		}
+
+
+		const items = entries.map(([id, qty]) => {
+			const prod = products.find((p) => String(p._id) === id) || { name: 'Unknown', price: 0 };
+			return {
+				_id: id,
+				name: prod.name,
+				unitPrice: Number(prod.price || 0),
+				qty,
+				subtotal: Number(prod.price || 0) * qty,
+			};
+		});
+
+		const itemsTotal = items.reduce((s, it) => s + (it.subtotal || 0), 0);
+
+		const helpFee = Math.max(500, Math.round(itemsTotal * 0.05));
+
+		const payload = { store: store.name, items, itemsTotal, helpFee, total: itemsTotal + helpFee };
+		const qs = `?store=${encodeURIComponent(store.name)}&help=true&order=${encodeURIComponent(JSON.stringify(payload))}`;
+		router.push(`/booking${qs}`);
+	}
+
+	useEffect(() => {
+		let mounted = true;
+		(async () => {
+			setLoading(true);
+			try {
+				const res = await fetch(`${apiBase}/api/stores`);
+				if (!res.ok) throw new Error("Failed to fetch stores");
+				const arr = await res.json();
+				if (!mounted) return;
+				setStores(arr || []);
+				if (storeQuery) {
+					const qn = normalize(storeQuery);
+					const match = (arr || []).find((s) => {
+						const sn = normalize(s.name || "");
+						if (!sn) return false;
+						if (sn === qn) return true;
+						if (sn.includes(qn) || qn.includes(sn)) return true;
+						const sTokens = sn.split(/[^a-z0-9]+/).filter(Boolean);
+						const qTokens = qn.split(/[^a-z0-9]+/).filter(Boolean);
+						const common = qTokens.filter((t) => sTokens.includes(t));
+						if (common.length >= Math.max(1, Math.min(qTokens.length, 1))) return true;
+						return false;
+					});
+					if (match) {
+						setStore(match);
+						const prodRes = await fetch(`${apiBase}/api/stores/${match._id}/products`);
+						if (!prodRes.ok) throw new Error("Failed to fetch products for store");
+						const prods = await prodRes.json();
+						setProducts(prods || []);
+					} else {
+						setError(`Store '${storeQuery}' not found`);
+					}
+				}
+			} catch (err) {
+				console.error(err);
+				if (mounted) setError(err.message || "Failed to load shop");
+			} finally {
+				if (mounted) setLoading(false);
+			}
+		})();
+
+		return () => {
+			mounted = false;
+		};
+	}, [storeQuery]);
+
+	useEffect(() => {
+		const productQuery = search.get("product");
+		if (!productQuery) return;
+		if (!products || products.length === 0) return;
+		const found = products.find((p) => String(p._id) === String(productQuery));
+		if (found) {
+			setSelectedProduct(found);
+		} else {
+			setSelectedProduct(null);
+		}
+	}, [products, search]);
+
+
+
+	return (
+				<div className="min-h-screen p-6 ">
+					<div className="max-w-6xl mx-auto">
+						<div className="flex items-center justify-between mb-6">
+							<h1 className=" font-bold">Shop</h1>
+							{store && (
+								<div className="text-sm text-stone-700 dark:text-stone-200">
+									<span className="mr-2">Viewing:</span>
+									<strong className="mr-2">{store.name}</strong>
+									<span className="px-2 py-1 rounded bg-slate-100 text-xs">{store.location || store.address || 'Location not set'}</span>
+								</div>
+							)}
+						</div>
+		
+						{loading ? (
+							<div>Loading…</div>
+						) : error ? (
+							<div className="">{error}</div>
+						) : store ? (
+							<>
+								<p className=" mb-4">{store.description || store.location || ""}</p>
+		
+
+								<div className="mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+									<div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 w-full sm:w-auto">
+										<SearchBar value={searchTerm} onChange={setSearchTerm} />
+										<CategoriesFilter selected={category} onSelect={setCategory} />
+									</div>
+									<div className="flex items-center gap-3 relative">
+										<button onClick={() => setCartOpen((v) => !v)} className="relative px-3 py-2 rounded border">
+											Cart ({cartCount()})
+										</button>
+										<button onClick={handleCheckout} className="px-3 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700">Checkout</button>
+
+										<div className={`fixed inset-x-0 bottom-0 md:bottom-6 md:right-6 md:left-auto md:w-80 z-50 transform ${cartOpen ? 'translate-y-0' : 'translate-y-full'} transition-transform duration-300`} aria-hidden={!cartOpen}>
+											<div className="bg-white border-t md:rounded-lg md:shadow p-4 max-h-80 overflow-auto">
+												<div className="flex items-center justify-between mb-3">
+													<div className="font-semibold">Cart</div>
+													<div className="flex items-center gap-2">
+														<button onClick={() => setCartOpen(false)} className="text-sm px-2 py-1">Close</button>
+														<button onClick={() => setCart({})} className="text-sm text-red-600 px-2 py-1">Clear</button>
+													</div>
+												</div>
+												{Object.keys(cart).length === 0 ? (
+													<div className="text-sm">Your cart is empty</div>
+												) : (
+													<>
+														<ul className="space-y-2">
+														{Object.entries(cart).map(([id, qty]) => {
+															const prod = products.find((x) => String(x._id) === id);
+															if (!prod) return null;
+															return (
+																<li key={id} className="flex items-center justify-between">
+																	<div className="truncate">{prod.name} × {qty}</div>
+																	<div className="text-sm">₦{(Number(prod.price || 0) * qty).toLocaleString()}</div>
+																	</li>
+																);
+															})}
+														</ul>
+														<div className="mt-3 border-t pt-3 flex items-center justify-between">
+														<div className="text-sm">Items total</div>
+														<div className="font-semibold">
+															{(() => {
+																const items = Object.entries(cart).map(([id, qty]) => {
+																	const prod = products.find((p) => String(p._id) === id) || { price: 0 };
+																	return Number(prod.price || 0) * qty;
+																});
+																const sum = items.reduce((s, v) => s + v, 0);
+																return `₦${sum.toLocaleString()}`;
+															})()}
+														</div>
+														</div>
+														<div className="mt-3 flex items-center justify-end gap-2">
+														<button onClick={handleCheckout} className="px-3 py-2 bg-emerald-600 text-white rounded">Checkout</button>
+														</div>
+													</>
+												)}
+											</div>
+										</div>
+									</div>
+								</div>
+		
+								{products.length === 0 ? (
+									<div className=" ">No products found for this store.</div>
+								) : (
+									<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+										{products
+											.filter((p) => {
+											
+												if (searchTerm && !((p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || (p.description || '').toLowerCase().includes(searchTerm.toLowerCase()))) return false;
+											
+												const pk = p.category || inferCategoryFor(p);
+												if (category && category !== 'all' && pk !== category) return false;
+												return true;
+											})
+											.map((p) => {
+												const catKey = p.category || inferCategoryFor(p);
+												const cat = findCategoryByKey(catKey);
+												return (
+													<div key={p._id} className=" rounded-lg p-4 shadow flex flex-col">
+														<div className="flex items-center gap-2 mb-2">
+															{cat?.Icon ? <cat.Icon className="w-5 h-5" /> : null}
+															<div className="font-semibold truncate">{p.name}</div>
+														</div>
+														{p.image ? (
+															<div className="w-full overflow-hidden rounded-md mb-3" style={{ aspectRatio: '3/4' }}>
+																<img src={p.image} alt={p.name} className="w-full h-full object-cover" />
+															</div>
+														) : (
+															<div className="w-full rounded-md mb-3" style={{ aspectRatio: '3/4' }} />
+														)}
+		
+														<div className="flex-1">
+															<div className=" mt-1">₦{Number(p.price || 0).toLocaleString()}</div>
+															{p.description && (
+																<div className="mt-2">
+																	<p className={`${expanded[p._id] ? '' : 'line-clamp-3'}`}>{p.description}</p>
+																	<button onClick={() => setExpanded((s) => ({ ...s, [p._id]: !s[p._id] }))} className="mt-2 hover:underline" aria-expanded={!!expanded[p._id]}>
+																		{expanded[p._id] ? 'Show less' : 'Show more'}
+																	</button>
+																</div>
+															)}
+														</div>
+		
+														<div className="mt-4 flex items-center justify-between">
+															<a href={`/shop?store=${encodeURIComponent(store.name)}&product=${encodeURIComponent(p._id)}`} className=" hover:underline">View</a>
+															<button onClick={() => addToCart(p)} className="px-3 py-1 rounded-md ">Add</button>
+														</div>
+													</div>
+												);
+											})}
+									</div>
+								)}
+							</>
+						) : (
+							<div>
+								<p className=" mb-4">No store selected. You can pick a store from the list below.</p>
+								<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+									{stores.map((s) => (
+										<a key={s._id} href={`/shop?store=${encodeURIComponent(s.name)}`} className="block p-4 rounded shadow hover:shadow-md">
+											<div className="font-semibold">{s.name}</div>
+											<div className=" ">{s.location || s.address}</div>
+										</a>
+									))}
+								</div>
+							</div>
+						)}
+		
+
+						{selectedProduct && (
+							<div className="fixed inset-0 z-50 flex items-center justify-center">
+								<div
+									className="fixed inset-0"
+									onClick={() => {
+										setSelectedProduct(null);
+										const base = store ? `/shop?store=${encodeURIComponent(store.name)}` : "/shop";
+										router.replace(base);
+									}}
+								/>
+		
+								<div className="relative max-w-3xl w-full mx-4 rounded-lg overflow-hidden shadow-lg z-10">
+									<div className="p-4 flex items-start justify-between">
+										<div>
+											<div className=" font-semibold ">{selectedProduct.name}</div>
+											<div className=" ">₦{Number(selectedProduct.price || 0).toLocaleString()}</div>
+										</div>
+		
+										<button
+											onClick={() => {
+												setSelectedProduct(null);
+												const base = store ? `/shop?store=${encodeURIComponent(store.name)}` : "/shop";
+												router.replace(base);
+											}}
+											aria-label="Close"
+											className=" "
+										>
+											✕
+										</button>
+									</div>
+		
+									{selectedProduct.image && (
+										<div className="w-full" style={{ aspectRatio: "3/4" }}>
+											<img src={selectedProduct.image} alt={selectedProduct.name} className="w-full h-full object-cover" />
+										</div>
+									)}
+		
+									<div className="p-4">
+										<p className=" ">{selectedProduct.description}</p>
+									</div>
+								</div>
+							</div>
+						)}
+					</div>
+				</div>
+			);
+		}

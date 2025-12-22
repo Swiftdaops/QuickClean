@@ -1,14 +1,22 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { Toaster } from '@/components/ui/sonner';
+import { AuthProvider } from '@/context/AuthContext';
 
+// Disable automatic font preloading to avoid "preload but not used" warnings
+// (Next.js would otherwise add <link rel="preload"> tags for these fonts).
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  preload: false,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  preload: false,
 });
 
 export const metadata = {
@@ -20,9 +28,15 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
+        suppressHydrationWarning={true}
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AuthProvider>
+          <Navbar />
+          {children}
+          <Footer />
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );

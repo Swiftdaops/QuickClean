@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 export default function AdminLoginPage() {
 	const [username, setUsername] = useState('');
@@ -8,6 +9,7 @@ export default function AdminLoginPage() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState(null);
 	const router = useRouter();
+	const { login } = useAuth();
 
 	async function submit(e) {
 		e.preventDefault();
@@ -36,11 +38,22 @@ export default function AdminLoginPage() {
 				} catch {}
 				throw new Error(msg);
 			}
-			// If API returns a token, store it for Bearer auth flows
+			// If API returns a token, sync it with AuthContext so ProtectedRoute lets us in
 			try {
-				const data = await res.clone().json();
-				if (data?.token && typeof window !== 'undefined') {
-					localStorage.setItem('adminToken', data.token);
+				const ctype = res.headers.get('content-type') || '';
+				let tokenFromResponse = null;
+				if (ctype.includes('application/json')) {
+					const data = await res.json().catch(() => ({}));
+					tokenFromResponse = data?.token || null;
+				}
+				if (typeof window !== 'undefined') {
+					if (tokenFromResponse) {
+						localStorage.setItem('adminToken', tokenFromResponse);
+					}
+					const finalToken = tokenFromResponse || localStorage.getItem('adminToken');
+					if (finalToken) {
+						login(finalToken);
+					}
 				}
 			} catch {}
 			router.push('/admin/dashboard');

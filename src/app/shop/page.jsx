@@ -1,16 +1,16 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import SearchBar from '@/components/SearchBar';
 import CategoriesFilter from '@/components/CategoriesFilter';
 import { CATEGORIES, findCategoryByKey } from '@/lib/categories';
 import { toast } from '@/components/ui/sonner';
+import { buildCartPayload, saveCart } from '@/lib/cart';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 function normalize(s = "") {
-
 	return (s || "")
 		.toString()
 		.toLowerCase()
@@ -19,6 +19,14 @@ function normalize(s = "") {
 }
 
 export default function ShopPage() {
+	return (
+		<Suspense fallback={<div className="p-6">Loading shop…</div>}>
+			<ShopPageInner />
+		</Suspense>
+	);
+}
+
+function ShopPageInner() {
 	const search = useSearchParams();
 	const storeQuery = search.get("store") || "";
 	const [loading, setLoading] = useState(true);
@@ -92,23 +100,52 @@ export default function ShopPage() {
 
 		const items = entries.map(([id, qty]) => {
 			const prod = products.find((p) => String(p._id) === id) || { name: 'Unknown', price: 0 };
+			const unitPrice = Number(prod.price || 0);
 			return {
 				_id: id,
 				name: prod.name,
-				unitPrice: Number(prod.price || 0),
+				image: prod.image || null,
+				unitPrice,
 				qty,
-				subtotal: Number(prod.price || 0) * qty,
+				subtotal: unitPrice * qty,
 			};
 		});
 
-		const itemsTotal = items.reduce((s, it) => s + (it.subtotal || 0), 0);
-
-		const helpFee = Math.max(500, Math.round(itemsTotal * 0.05));
-
-		const payload = { store: store.name, items, itemsTotal, helpFee, total: itemsTotal + helpFee };
-		const qs = `?store=${encodeURIComponent(store.name)}&help=true&order=${encodeURIComponent(JSON.stringify(payload))}`;
-		router.push(`/booking${qs}`);
+		const payload = buildCartPayload(store.name, items);
+		saveCart(payload);
+		router.push('/booking');
 	}
+
+	useEffect(() => {
+		if (!store) return;
+
+		const entries = Object.entries(cart);
+		if (entries.length === 0) {
+			try {
+				if (typeof window !== 'undefined') {
+					window.localStorage.removeItem('quickclean_cart');
+					if (window.__quickclean_cart) delete window.__quickclean_cart;
+				}
+			} catch (e) {}
+			return;
+		}
+
+		const items = entries.map(([id, qty]) => {
+			const prod = products.find((p) => String(p._id) === id) || { name: 'Unknown', price: 0 };
+			const unitPrice = Number(prod.price || 0);
+			return {
+				_id: id,
+				name: prod.name,
+				image: prod.image || null,
+				unitPrice,
+				qty,
+				subtotal: unitPrice * qty,
+			};
+		});
+
+		const payload = buildCartPayload(store.name, items);
+		saveCart(payload);
+	}, [cart, store, products]);
 
 	useEffect(() => {
 		let mounted = true;

@@ -332,8 +332,8 @@ export default function AdminBookingsPage() {
 																					</select>
 
 																						{((b.orderSummary && Array.isArray(b.orderSummary.items) && b.orderSummary.items.length) || (Array.isArray(b.items) && b.items.length)) ? (
-																							<div className="w-full">
-																								<div className="text-sm font-medium">Items ordered</div>
+																							<div className="w-full border-2 border-green-600 rounded-md p-2">
+																								<div className="text-sm font-medium mb-1">Items ordered</div>
 																								<ul className="list-disc ml-5 text-sm">
 																								{(b.orderSummary?.items || b.items || []).map((it, idx) => (
 																									<li key={it._id || it.productId || idx}>
@@ -341,7 +341,7 @@ export default function AdminBookingsPage() {
 																									</li>
 																								))}
 																								</ul>
-																							</div>
+																								</div>
 																						) : null}
 
 
@@ -426,17 +426,17 @@ export default function AdminBookingsPage() {
 															))}
 														</select>
 
-														{((b.orderSummary && Array.isArray(b.orderSummary.items) && b.orderSummary.items.length) || (Array.isArray(b.items) && b.items.length)) ? (
-															<div className="w-full">
-																<div className="text-sm font-medium">Items ordered</div>
-																<ul className="list-disc ml-5 text-sm">
+															{((b.orderSummary && Array.isArray(b.orderSummary.items) && b.orderSummary.items.length) || (Array.isArray(b.items) && b.items.length)) ? (
+																<div className="w-full border-2 border-green-600 rounded-md p-2 mt-2">
+																	<div className="text-sm font-medium mb-1">Items ordered</div>
+																	<ul className="list-disc ml-5 text-sm">
 																{(b.orderSummary?.items || b.items || []).map((it, idx) => (
 																	<li key={it._id || it.productId || idx}>
 																		{it.name || it.title || it.productName || 'Item'} — {it.qty ?? 1} × ₦{Number(it.unitPrice ?? it.price ?? it.subtotal ?? 0).toLocaleString('en-NG')}{it.subtotal ? ` (₦${Number(it.subtotal).toLocaleString('en-NG')})` : ''}
 																	</li>
 																))}
-																</ul>
-															</div>
+																	</ul>
+																</div>
 														) : null}
 														<button onClick={() => handleDeleteBooking(b._id)}>Delete</button>
 														<button onClick={() => handleEditBooking(b)}>Edit</button>

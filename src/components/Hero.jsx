@@ -121,7 +121,7 @@ export default function Hero() {
                         <div className="flex flex-col items-center gap-4">
                             <div>
                                 <h2 className="text-xl font-semibold greeting">Hello, {customerName || 'Valued Customer'}</h2>
-                                <div className="text-sm text-stone-700 dark:text-stone-200 mt-1 hidden sm:block">Reliable, friendly cleaning — scheduled on your terms.</div>
+                                <div className="text-sm text-stone-950 mt-1 hidden sm:block">Reliable, friendly cleaning — scheduled on your terms.</div>
 
                                 {/* Welcome subheader with handshake Lottie (fades in) */}
                                 <div className="mt-3 flex items-center justify-center gap-3 welcome-fade">
@@ -140,7 +140,7 @@ export default function Hero() {
                             </div>
                         </div>
 
-                        <div className="text-sm text-stone-700 dark:text-stone-200 mt-3 max-w-2xl">
+                        <div className="text-sm text-stone-950 mt-3 max-w-2xl">
                             We provide professional cleaning services for homes, lodges, and residences within Ifite Awka — fast response time and dependable delivery across all our services.
                         </div>
                     </div>

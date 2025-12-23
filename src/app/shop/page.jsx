@@ -270,7 +270,7 @@ function ShopPageInner() {
 						<div className="flex items-center justify-between mb-6">
 							<h1 className=" font-bold">Shop</h1>
 							{store && (
-								<div className="text-sm text-stone-700 dark:text-stone-200">
+								<div className="text-sm text-stone-950">
 									<span className="mr-2">Viewing:</span>
 									<strong className="mr-2">{store.name}</strong>
 									<span className="px-2 py-1 rounded bg-slate-100 text-xs">{store.location || store.address || 'Location not set'}</span>

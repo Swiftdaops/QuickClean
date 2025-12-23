@@ -3,12 +3,13 @@
 import React, { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import SearchBar from '@/components/SearchBar';
+import UniversalSearch from '@/components/UniversalSearch';
 import CategoriesFilter from '@/components/CategoriesFilter';
 import { CATEGORIES, findCategoryByKey } from '@/lib/categories';
 import { toast } from '@/components/ui/sonner';
 import { buildCartPayload, saveCart } from '@/lib/cart';
 import posthog from 'posthog-js';
-import { MdThumbUp, MdThumbDown, MdAccessTime, MdVisibility, MdLocationOn } from 'react-icons/md';
+import { MdAccessTime, MdVisibility, MdLocationOn } from 'react-icons/md';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -364,6 +365,9 @@ function ShopPageInner() {
 								<div className="mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 									<div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 w-full sm:w-auto">
 										<SearchBar value={searchTerm} onChange={setSearchTerm} />
+										<div className="ml-2">
+											<UniversalSearch />
+										</div>
 										<CategoriesFilter selected={category} onSelect={setCategory} />
 									</div>
 									<div className="flex items-center gap-3 relative">
@@ -451,7 +455,11 @@ function ShopPageInner() {
 														)}
 		
 														<div className="flex-1">
-															<div className=" mt-1">₦{Number(p.price || 0).toLocaleString()}</div>
+															{Number(p.price) > 0 ? (
+																<div className=" mt-1">₦{Number(p.price).toLocaleString()}</div>
+															) : (
+																<div className="text-sm text-stone-500 mt-1">Price: —</div>
+															)}
 															{p.description && (
 																<div className="mt-2">
 																	<p className={`${expanded[p._id] ? '' : 'line-clamp-3'}`}>{p.description}</p>
@@ -462,25 +470,11 @@ function ShopPageInner() {
 															)}
 														</div>
 
-														<div className="mt-3 flex items-center justify-between text-xs text-stone-950">
-															<button
-																type="button"
-																onClick={() => reactToProduct(p._id, 'like')}
-																disabled={!!ratingBusy[p._id]}
-																className="inline-flex items-center gap-1 px-2 py-1 rounded border"
-															>
-																<MdThumbUp className="w-4 h-4" aria-hidden />
-																<span>{p.likes ?? 0}</span>
-															</button>
-															<button
-																type="button"
-																onClick={() => reactToProduct(p._id, 'dislike')}
-																disabled={!!ratingBusy[p._id]}
-																className="inline-flex items-center gap-1 px-2 py-1 rounded border"
-															>
-																<MdThumbDown className="w-4 h-4" aria-hidden />
-																<span>{p.dislikes ?? 0}</span>
-															</button>
+														{/* Likes/dislikes removed per admin request; show quantity if available */}
+														<div className="mt-3 text-sm text-stone-700">
+															{typeof p.quantity === 'number' ? (
+																<div>Quantity: {p.quantity}</div>
+															) : null}
 														</div>
 		
 														<div className="mt-4 flex items-center justify-between">
@@ -495,9 +489,16 @@ function ShopPageInner() {
 							</>
 						) : (
 							<div>
+								<div className="mb-4">
+									<SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search products or stores..." />
+								</div>
 								<p className=" mb-4">No store selected. You can pick a store from the list below.</p>
 								<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-									{stores.map((s) => (
+									{(stores || []).filter((s) => {
+										const q = (searchTerm || '').toLowerCase().trim();
+										if (!q) return true;
+										return (s.name || '').toLowerCase().includes(q);
+									}).map((s) => (
 										<a
 											key={s._id}
 											href={`/shop?store=${encodeURIComponent(s.name)}`}

@@ -16,8 +16,9 @@ export default function AdminStorePage() {
 	const [creatingStore, setCreatingStore] = useState(false);
 	const [newStoreName, setNewStoreName] = useState("");
 	const [newStoreLocation, setNewStoreLocation] = useState("");
-	const [newStoreAddress, setNewStoreAddress] = useState("");
+	const [newStoreAvgDelivery, setNewStoreAvgDelivery] = useState("");
 	const [savingStore, setSavingStore] = useState(false);
+	const [addingProduct, setAddingProduct] = useState(false);
 
   useEffect(() => {
 	let mounted = true;
@@ -100,32 +101,33 @@ export default function AdminStorePage() {
 				  placeholder="e.g. Chijohnz's Supermarket"
 				/>
 			  </div>
-			  <div>
-				<label className="block text-sm mb-1">Location</label>
-				<Input
-				  value={newStoreLocation}
-				  onChange={(e) => setNewStoreLocation(e.target.value)}
-				  placeholder="e.g. Yahoo junction"
-				/>
-			  </div>
-			  <div>
-				<label className="block text-sm mb-1">Address (optional)</label>
-				<Input
-				  value={newStoreAddress}
-				  onChange={(e) => setNewStoreAddress(e.target.value)}
-				  placeholder="Full address"
-				/>
-			  </div>
+							<div>
+								<label className="block text-sm mb-1">Location</label>
+								<Input
+									value={newStoreLocation}
+									onChange={(e) => setNewStoreLocation(e.target.value)}
+									placeholder="e.g. Yahoo junction"
+								/>
+							</div>
+							<div>
+								<label className="block text-sm mb-1">Avg delivery time (mins)</label>
+								<Input
+									type="number"
+									value={newStoreAvgDelivery}
+									onChange={(e) => setNewStoreAvgDelivery(e.target.value)}
+									placeholder="e.g. 30"
+								/>
+							</div>
+							{/* Address removed from create flow; can be set later via admin edit */}
 			</div>
 			<div className="flex items-center justify-end gap-2 mt-2">
 			  <Button
 				variant="secondary"
-				onClick={() => {
-				  setCreatingStore(false);
-				  setNewStoreName("");
-				  setNewStoreLocation("");
-				  setNewStoreAddress("");
-				}}
+								onClick={() => {
+									setCreatingStore(false);
+									setNewStoreName("");
+									setNewStoreLocation("");
+								}}
 				disabled={savingStore}
 			  >
 				Cancel
@@ -141,11 +143,11 @@ export default function AdminStorePage() {
 					const res = await fetch(`${apiBase}/api/stores`, {
 					  method: "POST",
 					  headers: { "Content-Type": "application/json" },
-					  body: JSON.stringify({
-						name: newStoreName.trim(),
-						location: newStoreLocation.trim(),
-						address: newStoreAddress.trim() || undefined,
-					  }),
+										body: JSON.stringify({
+												name: newStoreName.trim(),
+												location: newStoreLocation.trim(),
+												avgDeliveryTime: newStoreAvgDelivery ? Number(newStoreAvgDelivery) : undefined,
+											}),
 					});
 					const data = await res.json().catch(() => ({}));
 					if (!res.ok) {
@@ -156,7 +158,7 @@ export default function AdminStorePage() {
 					setCreatingStore(false);
 					setNewStoreName("");
 					setNewStoreLocation("");
-					setNewStoreAddress("");
+					setNewStoreAvgDelivery("");
 				  } catch (err) {
 					console.error(err);
 					toast.error(err.message || "Failed to create store");
@@ -173,7 +175,7 @@ export default function AdminStorePage() {
 		</Card>
 	  )}
 
-	  {/* Hero that reflects current store selection */}
+			{/* Hero that reflects current store selection */}
 	  <div className="rounded-lg p-4 shadow flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
 		<div>
 		  {selectedStoreFilter ? (
@@ -183,7 +185,15 @@ export default function AdminStorePage() {
 			  return (
 				<>
 				  <div className=" font-semibold">{s.name}</div>
-				  <div className=" ">{s.location || s.address || "No location"}</div>
+									<div className=" ">{s.location || s.address || "No location"}</div>
+									{s.avgDeliveryTime != null && (
+										<div className=" text-sm text-muted-foreground">Avg delivery: {s.avgDeliveryTime} mins</div>
+									)}
+									<div className="mt-2">
+										<Button variant="outline" className="px-2 py-1 text-sm" onClick={() => setAddingProduct(true)}>
+											Add Product
+										</Button>
+									</div>
 				</>
 			  );
 			})()
@@ -242,8 +252,15 @@ export default function AdminStorePage() {
 					<img src={imageUrl} alt={product.name} className="w-full h-full object-cover" />
 				  </div>
 				)}
-				<p className="">₦{Number(product.price || 0).toFixed(2)}</p>
-				<p className=" mt-2">{product.description}</p>
+						{Number(product.price) > 0 ? (
+							<p className="">₦{Number(product.price).toFixed(2)}</p>
+						) : (
+							<p className="text-sm text-stone-500">Price not set</p>
+						)}
+						<p className=" mt-2">{product.description}</p>
+						{typeof product.quantity === 'number' && (
+							<p className="text-sm text-stone-700 mt-2">Quantity: {product.quantity}</p>
+						)}
 				<Button variant="secondary" className="mt-4" onClick={() => setSelectedProduct(product)}>
 				  Edit Product
 				</Button>
@@ -253,16 +270,31 @@ export default function AdminStorePage() {
 		})}
 	  </div>
 
-	  {selectedProduct && (
-		<EditProduct
-		  product={selectedProduct}
-		  onClose={() => setSelectedProduct(null)}
-		  onUpdate={(updatedProduct) => {
-			setProducts(products.map((p) => (p._id === updatedProduct._id ? updatedProduct : p)));
-			setSelectedProduct(null);
-		  }}
-		/>
-	  )}
+			{selectedProduct && (
+				<EditProduct
+					product={selectedProduct}
+					onClose={() => setSelectedProduct(null)}
+					onUpdate={(updatedProduct) => {
+						setProducts(products.map((p) => (p._id === updatedProduct._id ? updatedProduct : p)));
+						setSelectedProduct(null);
+					}}
+				/>
+			)}
+
+			{addingProduct && selectedStoreFilter && (
+				<EditProduct
+					product={null}
+					createForStoreId={selectedStoreFilter}
+					onClose={() => setAddingProduct(false)}
+					onUpdate={(created) => {
+						// Only add products that belong to the selected store
+						if (String(created.store) === String(selectedStoreFilter)) {
+							setProducts((prev) => [created, ...prev]);
+						}
+						setAddingProduct(false);
+					}}
+				/>
+			)}
 	</div>
   );
 }

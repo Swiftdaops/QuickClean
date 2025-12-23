@@ -81,12 +81,11 @@ export default function Hero() {
 
     const handleShopClick = (e) => {
         e.preventDefault();
-
         // Track CTA click
         posthog.capture('cta_clicked', {
             cta_type: 'help_me_buy',
             cta_text: 'Help Me Buy Something',
-            destination: '/shop?store=Chijohnz supermarket',
+            destination: '/shop',
         });
 
         const url = 'https://res.cloudinary.com/dnitzkowt/video/upload/v1766339273/new-notification-3-398649_pxhiar.mp3';
@@ -96,13 +95,13 @@ export default function Hero() {
             audio.currentTime = 0;
             audio.play()
                 .then(() => {
-                    setTimeout(() => router.push('/shop?store=' + encodeURIComponent('Chijohnz supermarket')), 120);
+                    setTimeout(() => router.push('/shop'), 120);
                 })
                 .catch(() => {
-                    router.push('/shop?store=' + encodeURIComponent('Chijohnz supermarket'));
+                    router.push('/shop');
                 });
         } catch (err) {
-            router.push('/shop?store=' + encodeURIComponent('Chijohnz supermarket'));
+            router.push('/shop');
         }
     };
     return (
@@ -213,13 +212,13 @@ export default function Hero() {
                         Quick Clean Services
                     </a>
 
-                    <Link
-                        href="/shop?store=Chijohnz%20supermarket"
+                    <a
+                        href="/shop"
                         onClick={handleShopClick}
                         className="inline-flex items-center justify-center rounded-xl border px-8 py-4 font-semibold transition"
                     >
                         Help Me Buy Something
-                    </Link>
+                    </a>
                 </div>
             </div>
         </section>

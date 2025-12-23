@@ -14,6 +14,7 @@ export default function AdminServicesPage() {
 		price: "",
 		description: "",
 		isActive: true,
+		icon: "",
 	});
 
 	useEffect(() => {
@@ -51,6 +52,7 @@ export default function AdminServicesPage() {
 			price: service?.price || "",
 			description: service?.description || "",
 			isActive: service?.isActive ?? true,
+			icon: service?.icon || "",
 		});
 	};
 
@@ -150,6 +152,7 @@ export default function AdminServicesPage() {
 						<thead>
 							<tr>
 								<th className="p-3 text-left">Name</th>
+								<th className="p-3 text-left">Icon</th>
 								<th className="p-3 text-left">Price (₦)</th>
 								<th className="p-3 text-left">Status</th>
 								<th className="p-3 text-left">Actions</th>
@@ -158,8 +161,9 @@ export default function AdminServicesPage() {
 						<tbody>
 							{services.map((service) => (
 								<tr key={service._id}>
-									<td className="p-3 font-medium">{service.name}</td>
-									<td className="p-3">₦{Number(service.price || 0).toLocaleString()}</td>
+										<td className="p-3 font-medium">{service.name}</td>
+										<td className="p-3">{service.icon || '—'}</td>
+										<td className="p-3">₦{Number(service.price || 0).toLocaleString()}</td>
 									<td className="p-3">
 										<span
 											className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -208,6 +212,12 @@ export default function AdminServicesPage() {
 								placeholder="Price (NGN)"
 								value={form.price}
 								onChange={(e) => setForm({ ...form, price: e.target.value })}
+								className="w-full border rounded-lg p-3"
+							/>
+							<input
+								placeholder="Icon (e.g. MdCleaningServices)"
+								value={form.icon}
+								onChange={(e) => setForm({ ...form, icon: e.target.value })}
 								className="w-full border rounded-lg p-3"
 							/>
 							<textarea

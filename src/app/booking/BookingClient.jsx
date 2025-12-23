@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from 'next/navigation';
-import { MdShoppingCart, MdCleaningServices, MdHome, MdLocalLaundryService, MdAutoAwesome } from 'react-icons/md';
+import ServiceIcon from '@/components/ServiceIcon';
 import { Input, Textarea, Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { toast } from "@/components/ui/sonner";
 import { playProductAddedSound } from "@/lib/sound";
@@ -14,15 +14,6 @@ import posthog from 'posthog-js';
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 const SERVICE_DESCRIPTIONS = {};
-
-function ServiceIcon({ name, className = "w-6 h-6 text-stone-950" }) {
-    const key = (name || "").toLowerCase();
-    if (key.includes("help") || key.includes("buy")) return <MdShoppingCart className={className} aria-hidden />;
-    if (key.includes("lodge") || key.includes("clean")) return <MdCleaningServices className={className} aria-hidden />;
-    if (key.includes("home") || key.includes("apartment")) return <MdHome className={className} aria-hidden />;
-    if (key.includes("laundry") || key.includes("dry") || key.includes("wash")) return <MdLocalLaundryService className={className} aria-hidden />;
-    return <MdAutoAwesome className={className} aria-hidden />;
-}
 
 export default function BookingClient() {
     const search = useSearchParams();

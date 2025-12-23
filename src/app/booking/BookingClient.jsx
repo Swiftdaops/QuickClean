@@ -520,8 +520,8 @@ export default function BookingClient() {
     }
 
     return (
-        <div className="p-6 md:p-12 max-w-4xl mx-auto bg-cyan-100 dark:bg-[#677d7e] text-stone-950 ">
-            <Card className="shadow-lg bg-cyan-100 dark:bg-[#677d7e] text-stone-950 ">
+        <div className="p-6 md:p-12 max-w-4xl mx-auto bg-cyan-100 text-stone-950 ">
+            <Card className="shadow-lg bg-cyan-100  text-stone-950 ">
                 <CardHeader>
                     <CardTitle className="text-2xl">Book a Service</CardTitle>
                 </CardHeader>

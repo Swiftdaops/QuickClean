@@ -2,11 +2,6 @@
 
 /* CSS variables for optional non-Tailwind fallbacks.
    Avoid forcing body background here so Tailwind's utility classes control backgrounds.
-*/
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
 
 /* Expose theme variables for inline usage where needed. These will be updated
    by the `dark` class (next-themes) or by the user's OS preference as a fallback. */
@@ -17,16 +12,8 @@
   }
 }
 
-/* When next-themes toggles the `dark` class on <html>, update variables accordingly. */
-.dark {
-  --background: #677d7e; /* matches requested dark page background */
-  --foreground: #ffffff;
-}
 
-body {
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+
 
 .card {
     backdrop-filter: blur(16px) saturate(180%);

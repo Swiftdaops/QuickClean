@@ -106,7 +106,7 @@ export default function Hero() {
         }
     };
     return (
-        <section className="relative w-full py-20 px-6">
+        <section className="relative w-full py-20 px-6 ">
             <div className="mx-auto max-w-5xl">
                 {/* Headline */}
                 <Link href="/" className="inline-block">

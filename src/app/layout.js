@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import { Toaster } from '@/components/ui/sonner';
 import PostHogProviderClient from '@/components/PostHogProviderClient';
 import { AuthProvider } from '@/context/AuthContext';
+import OrderStatusFloating from '@/components/OrderStatusFloating';
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -40,6 +41,7 @@ export default function RootLayout({ children }) {
               {children}
               <Footer />
               <Toaster />
+              <OrderStatusFloating />
             </AuthProvider>
           </PostHogProviderClient>
         </Suspense>

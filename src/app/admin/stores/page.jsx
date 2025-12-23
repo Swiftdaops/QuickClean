@@ -13,6 +13,11 @@ export default function AdminStorePage() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [search, setSearch] = useState("");
   const [selectedStoreFilter, setSelectedStoreFilter] = useState(null);
+	const [creatingStore, setCreatingStore] = useState(false);
+	const [newStoreName, setNewStoreName] = useState("");
+	const [newStoreLocation, setNewStoreLocation] = useState("");
+	const [newStoreAddress, setNewStoreAddress] = useState("");
+	const [savingStore, setSavingStore] = useState(false);
 
   useEffect(() => {
 	let mounted = true;
@@ -73,7 +78,100 @@ export default function AdminStorePage() {
 
   return (
 	<div className="p-4 md:p-8 lg:p-12 space-y-6">
-	  <h1 className=" font-bold ">Store Management</h1>
+	  <div className="flex items-center justify-between gap-4">
+		<h1 className=" font-bold ">Store Management</h1>
+		<Button onClick={() => setCreatingStore((v) => !v)} variant="default">
+		  {creatingStore ? "Close" : "Add Store"}
+		</Button>
+	  </div>
+
+	  {creatingStore && (
+		<Card className="mt-2">
+		  <CardHeader>
+			<CardTitle>Create New Store</CardTitle>
+		  </CardHeader>
+		  <CardContent className="space-y-3">
+			<div className="grid gap-3 md:grid-cols-3">
+			  <div>
+				<label className="block text-sm mb-1">Name</label>
+				<Input
+				  value={newStoreName}
+				  onChange={(e) => setNewStoreName(e.target.value)}
+				  placeholder="e.g. Chijohnz's Supermarket"
+				/>
+			  </div>
+			  <div>
+				<label className="block text-sm mb-1">Location</label>
+				<Input
+				  value={newStoreLocation}
+				  onChange={(e) => setNewStoreLocation(e.target.value)}
+				  placeholder="e.g. Yahoo junction"
+				/>
+			  </div>
+			  <div>
+				<label className="block text-sm mb-1">Address (optional)</label>
+				<Input
+				  value={newStoreAddress}
+				  onChange={(e) => setNewStoreAddress(e.target.value)}
+				  placeholder="Full address"
+				/>
+			  </div>
+			</div>
+			<div className="flex items-center justify-end gap-2 mt-2">
+			  <Button
+				variant="secondary"
+				onClick={() => {
+				  setCreatingStore(false);
+				  setNewStoreName("");
+				  setNewStoreLocation("");
+				  setNewStoreAddress("");
+				}}
+				disabled={savingStore}
+			  >
+				Cancel
+			  </Button>
+			  <Button
+				onClick={async () => {
+				  if (!newStoreName.trim() || !newStoreLocation.trim()) {
+					toast.error("Name and location are required");
+					return;
+				  }
+				  try {
+					setSavingStore(true);
+					const res = await fetch(`${apiBase}/api/stores`, {
+					  method: "POST",
+					  headers: { "Content-Type": "application/json" },
+					  body: JSON.stringify({
+						name: newStoreName.trim(),
+						location: newStoreLocation.trim(),
+						address: newStoreAddress.trim() || undefined,
+					  }),
+					});
+					const data = await res.json().catch(() => ({}));
+					if (!res.ok) {
+					  throw new Error(data.error || data.message || "Failed to create store");
+					}
+					setStoresList((prev) => [...prev, data]);
+					toast.success("Store created");
+					setCreatingStore(false);
+					setNewStoreName("");
+					setNewStoreLocation("");
+					setNewStoreAddress("");
+				  } catch (err) {
+					console.error(err);
+					toast.error(err.message || "Failed to create store");
+				  } finally {
+					setSavingStore(false);
+				  }
+				}}
+				disabled={savingStore}
+			  >
+				{savingStore ? "Saving..." : "Save Store"}
+			  </Button>
+			</div>
+		  </CardContent>
+		</Card>
+	  )}
 
 	  {/* Hero that reflects current store selection */}
 	  <div className="rounded-lg p-4 shadow flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

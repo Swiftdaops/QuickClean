@@ -8,6 +8,7 @@ import { CATEGORIES, findCategoryByKey } from '@/lib/categories';
 import { toast } from '@/components/ui/sonner';
 import { buildCartPayload, saveCart } from '@/lib/cart';
 import posthog from 'posthog-js';
+import { MdThumbUp, MdThumbDown, MdAccessTime, MdVisibility, MdLocationOn } from 'react-icons/md';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -42,6 +43,8 @@ function ShopPageInner() {
 	const [category, setCategory] = useState('all');
 	const [cart, setCart] = useState({}); // { productId: quantity }
 	const [cartOpen, setCartOpen] = useState(false);
+	const [storeStats, setStoreStats] = useState(null);
+	const [ratingBusy, setRatingBusy] = useState({}); // per-product reaction loading
 
 
 	function addToCart(product) {
@@ -173,6 +176,44 @@ function ShopPageInner() {
 		router.push('/booking');
 	}
 
+	async function reactToProduct(productId, action) {
+		try {
+			setRatingBusy((m) => ({ ...m, [productId]: true }));
+			const res = await fetch(`${apiBase}/api/products/${productId}/react`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ action }),
+			});
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok) throw new Error(data.error || data.message || 'Failed to update rating');
+
+			const stats = data.productStats || {};
+			setProducts((prev) =>
+				prev.map((p) =>
+					String(p._id) === String(productId)
+						? { ...p, likes: stats.likes ?? p.likes ?? 0, dislikes: stats.dislikes ?? p.dislikes ?? 0 }
+						: p
+				)
+			);
+
+			if (data.storeStats) {
+				const s = data.storeStats;
+				const total = (s.likes || 0) + (s.dislikes || 0);
+				const rating = total > 0 ? (s.likes / total) * 5 : null;
+				setStoreStats({ likes: s.likes || 0, dislikes: s.dislikes || 0, rating, completedOrders: s.completedOrders || 0 });
+			}
+		} catch (err) {
+			console.error(err);
+			toast.error(err.message || 'Failed to update rating');
+		} finally {
+			setRatingBusy((m) => {
+				const next = { ...m };
+				delete next[productId];
+				return next;
+			});
+		}
+	}
+
 	useEffect(() => {
 		if (!store) return;
 
@@ -229,10 +270,12 @@ function ShopPageInner() {
 					});
 					if (match) {
 						setStore(match);
-						const prodRes = await fetch(`${apiBase}/api/stores/${match._id}/products`);
+						const prodRes = await fetch(`${apiBase}/api/stores/${match._id}`);
 						if (!prodRes.ok) throw new Error("Failed to fetch products for store");
-						const prods = await prodRes.json();
-						setProducts(prods || []);
+						const payload = await prodRes.json();
+						setStore(payload.store || match);
+						setProducts(payload.products || []);
+						setStoreStats(payload.storeStats || null);
 					} else {
 						setError(`Store '${storeQuery}' not found`);
 					}
@@ -270,10 +313,41 @@ function ShopPageInner() {
 						<div className="flex items-center justify-between mb-6">
 							<h1 className=" font-bold">Shop</h1>
 							{store && (
-								<div className="text-sm text-stone-950">
-									<span className="mr-2">Viewing:</span>
-									<strong className="mr-2">{store.name}</strong>
-									<span className="px-2 py-1 rounded bg-slate-100 text-xs">{store.location || store.address || 'Location not set'}</span>
+								<div className="text-sm text-stone-950 space-y-1">
+									<div>
+										<span className="mr-2 inline-flex items-center gap-1">
+											<MdVisibility className="w-3 h-3" aria-hidden />
+											<span>Viewing:</span>
+										</span>
+										<strong className="mr-2">{store.name}</strong>
+										<span className="px-2 py-1 rounded bg-slate-100 text-xs inline-flex items-center gap-1">
+											<MdLocationOn className="w-3 h-3" aria-hidden />
+											<span>
+												{typeof store.name === 'string' && store.name.toLowerCase().includes('chijohnz')
+													? 'Location: Yahoo junction'
+													: (store.location || store.address || 'Location not set')}
+											</span>
+										</span>
+									</div>
+									{storeStats && (
+										<div className="text-xs text-stone-950 space-y-0.5">
+											{storeStats.rating != null ? (
+												<span>
+													Rating: {storeStats.rating.toFixed(1)} / 5 · {storeStats.likes} likes, {storeStats.dislikes} dislikes · {storeStats.completedOrders ?? 0} completed orders
+												</span>
+											) : (
+												<span>
+													No rating yet · {storeStats.completedOrders ?? 0} completed orders
+												</span>
+											)}
+											{typeof store.name === 'string' && store.name.toLowerCase().includes('chijohnz') && (
+												<p className="flex items-center gap-1">
+													<MdAccessTime className="w-3 h-3" aria-hidden />
+													<span>Average delivery time from Chijohnz is just 1 hour for all orders within Ifite, Awka.</span>
+												</p>
+											)}
+										</div>
+									)}
 								</div>
 							)}
 						</div>
@@ -386,6 +460,27 @@ function ShopPageInner() {
 																	</button>
 																</div>
 															)}
+														</div>
+
+														<div className="mt-3 flex items-center justify-between text-xs text-stone-950">
+															<button
+																type="button"
+																onClick={() => reactToProduct(p._id, 'like')}
+																disabled={!!ratingBusy[p._id]}
+																className="inline-flex items-center gap-1 px-2 py-1 rounded border"
+															>
+																<MdThumbUp className="w-4 h-4" aria-hidden />
+																<span>{p.likes ?? 0}</span>
+															</button>
+															<button
+																type="button"
+																onClick={() => reactToProduct(p._id, 'dislike')}
+																disabled={!!ratingBusy[p._id]}
+																className="inline-flex items-center gap-1 px-2 py-1 rounded border"
+															>
+																<MdThumbDown className="w-4 h-4" aria-hidden />
+																<span>{p.dislikes ?? 0}</span>
+															</button>
 														</div>
 		
 														<div className="mt-4 flex items-center justify-between">

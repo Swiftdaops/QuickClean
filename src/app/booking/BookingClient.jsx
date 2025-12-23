@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useSearchParams } from 'next/navigation';
+import Link from "next/link";
+import { useSearchParams, useRouter } from 'next/navigation';
 import { MdShoppingCart, MdCleaningServices, MdHome, MdLocalLaundryService, MdAutoAwesome } from 'react-icons/md';
 import { Input, Textarea, Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { toast } from "@/components/ui/sonner";
@@ -25,6 +26,7 @@ function ServiceIcon({ name, className = "w-6 h-6 text-stone-950" }) {
 
 export default function BookingClient() {
     const search = useSearchParams();
+    const router = useRouter();
     const [orderData, setOrderData] = useState(null);
     const [formData, setFormData] = useState({ name: "", phone: "", date: "", notes: "" });
     const [services, setServices] = useState([]);
@@ -35,6 +37,7 @@ export default function BookingClient() {
     const [loadingServices, setLoadingServices] = useState(true);
     const [fetchError, setFetchError] = useState(null);
     const [splashes, setSplashes] = useState([]);
+    const [lastBookingId, setLastBookingId] = useState(null);
 
     useEffect(() => {
         let mounted = true;
@@ -323,6 +326,7 @@ export default function BookingClient() {
                     window.localStorage.setItem('cid', customerCid);
                 }
                 window.localStorage.setItem('customerName', name);
+                window.localStorage.setItem('customerPhone', phone);
             }
         } catch (e) { customerCid = customerCid || null; }
 
@@ -392,16 +396,6 @@ export default function BookingClient() {
 
         console.debug('Booking payload', payload);
 
-        let popup = null;
-        try {
-            if (typeof window !== 'undefined') {
-                popup = window.open('about:blank', '_blank', 'noopener,noreferrer');
-            }
-        } catch (e) {
-            console.debug('Popup open failed', e);
-            popup = null;
-        }
-
         setLoading(true);
         try {
             const res = await fetch(`${apiBase}/api/bookings`, {
@@ -413,8 +407,19 @@ export default function BookingClient() {
             if (!res.ok) throw new Error(j.error || j.message || 'Booking failed');
             toast.success('Booking created — we will contact you');
 
-            // Track booking submission
             const bookingId = j?.booking?._id || (Array.isArray(j?.bookings) && j.bookings[0]?._id) || j?._id || j?.id || '';
+            if (bookingId) {
+                const idStr = String(bookingId);
+                setLastBookingId(idStr);
+                try {
+                    if (typeof window !== 'undefined') {
+                        window.localStorage.setItem('quickclean_last_order_id', idStr);
+                    }
+                } catch (e) {
+                    console.debug('Failed to persist last order id', e);
+                }
+            }
+            // Track booking submission
             posthog.capture('booking_submitted', {
                 booking_id: bookingId,
                 customer_name: name,
@@ -481,17 +486,8 @@ export default function BookingClient() {
                 ? `whatsapp://send?phone=${waPhone}&text=${encoded}`
                 : `https://wa.me/${waPhone}?text=${encoded}`;
             try {
-                if (popup) {
-                    try {
-                        popup.location.href = waUrl;
-                    } catch (err) {
-                        const opened = window.open(waUrl, '_blank', 'noopener,noreferrer');
-                        if (!opened) window.location.href = waUrl;
-                    }
-                } else {
-                    const opened = window.open(waUrl, '_blank', 'noopener,noreferrer');
-                    if (!opened) window.location.href = waUrl;
-                }
+                const opened = window.open(waUrl, '_blank', 'noopener,noreferrer');
+                if (!opened) window.location.href = waUrl;
             } catch (e) {
                 console.debug('WhatsApp redirect failed, copying message to clipboard', e);
                 try {
@@ -510,6 +506,14 @@ export default function BookingClient() {
                     if (window.__quickclean_cart) delete window.__quickclean_cart;
                 }
             } catch (e) {}
+
+            try {
+                if (orderId) {
+                    router.push(`/order-status/${orderId}`);
+                }
+            } catch (e) {
+                console.debug('Redirect to order status failed', e);
+            }
 
         } catch (err) {
             console.error(err);
@@ -604,6 +608,18 @@ export default function BookingClient() {
                         <div className="mt-4">
                             <Button type="submit" disabled={loading}>{loading ? 'Booking…' : 'Book now'}</Button>
                         </div>
+
+                        {lastBookingId && (
+                            <div className="mt-4">
+                                <Link
+                                    href={`/order-status/${lastBookingId}`}
+                                    title="Order update"
+                                    className="inline-flex items-center px-4 py-2 border rounded underline-offset-2 hover:underline"
+                                >
+                                    Order update
+                                </Link>
+                            </div>
+                        )}
                     </form>
                 </CardContent>
             </Card>

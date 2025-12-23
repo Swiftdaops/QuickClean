@@ -58,7 +58,7 @@ export default function AboutContent() {
           Fast, Reliable Cleaning in Ifite Awka
         </motion.h1>
         <motion.p
-          className="text-gray-700 dark:text-gray-200"
+          className="text-stone-950"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
@@ -73,13 +73,13 @@ export default function AboutContent() {
         >
           <Link
             href="/booking"
-            className="inline-flex items-center justify-center px-5 py-3 rounded-md bg-emerald-600 text-white hover:bg-emerald-700"
+            className="inline-flex items-center justify-center px-5 py-3 rounded-md border bg-cyan-100 text-stone-950"
           >
             Book a Service
           </Link>
           <Link
             href="/contact"
-            className="inline-flex items-center justify-center px-5 py-3 rounded-md border border-emerald-600 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+            className="inline-flex items-center justify-center px-5 py-3 rounded-md border bg-cyan-100 text-stone-950"
           >
             WhatsApp Us
           </Link>
@@ -105,7 +105,7 @@ export default function AboutContent() {
             variants={{ visible: { opacity: 1, y: 0 } }}
           >
             <div className="font-semibold">{it.title}</div>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">{it.desc}</p>
+            <p className="mt-1 text-sm text-stone-950">{it.desc}</p>
           </motion.div>
         ))}
       </motion.section>
@@ -165,13 +165,13 @@ export default function AboutContent() {
       >
         <div>
           <h2 className="text-xl font-semibold">Get Started with QuickClean Today</h2>
-          <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
+          <p className="mt-1 text-sm text-stone-950">
             Experience fast, reliable, professional cleaning in Ifite Awka.
           </p>
         </div>
         <Link
           href="/booking"
-          className="inline-flex items-center justify-center px-5 py-3 rounded-md bg-emerald-600 text-white hover:bg-emerald-700"
+          className="inline-flex items-center justify-center px-5 py-3 rounded-md border bg-cyan-100 text-stone-950"
         >
           Book a Service
         </Link>

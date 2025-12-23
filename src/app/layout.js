@@ -4,12 +4,8 @@ import "./globals.css";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Toaster } from '@/components/ui/sonner';
-import ThemeProviderClient from '@/components/ThemeProviderClient';
 import PostHogProviderClient from '@/components/PostHogProviderClient';
 import { AuthProvider } from '@/context/AuthContext';
-
-// Disable automatic font preloading to avoid "preload but not used" warnings
-// (Next.js would otherwise add <link rel="preload"> tags for these fonts).
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -31,18 +27,16 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning={true} className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ThemeProviderClient>
-          <Suspense fallback={null}>
-            <PostHogProviderClient>
-              <AuthProvider>
-                <Navbar />
-                {children}
-                <Footer />
-                <Toaster />
-              </AuthProvider>
-            </PostHogProviderClient>
-          </Suspense>
-        </ThemeProviderClient>
+        <Suspense fallback={null}>
+          <PostHogProviderClient>
+            <AuthProvider>
+              <Navbar />
+              {children}
+              <Footer />
+              <Toaster />
+            </AuthProvider>
+          </PostHogProviderClient>
+        </Suspense>
       </body>
     </html>
   );

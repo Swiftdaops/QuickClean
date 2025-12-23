@@ -14,7 +14,7 @@ const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 const SERVICE_DESCRIPTIONS = {};
 
-function ServiceIcon({ name, className = "w-6 h-6 text-emerald-600" }) {
+function ServiceIcon({ name, className = "w-6 h-6 text-stone-950" }) {
     const key = (name || "").toLowerCase();
     if (key.includes("help") || key.includes("buy")) return <MdShoppingCart className={className} aria-hidden />;
     if (key.includes("lodge") || key.includes("clean")) return <MdCleaningServices className={className} aria-hidden />;
@@ -527,14 +527,14 @@ export default function BookingClient() {
                 </CardHeader>
                 <CardContent>
                     <div className="mb-4">
-                        <p className="text-sm text-muted-foreground">Choose a service and provide your details. Prices are shown below.</p>
+                        <p className="text-sm text-stone-950">Choose a service and provide your details. Prices are shown below.</p>
                     </div>
 
                     {summaryCart && (
                         <OrderSummary cart={summaryCart} />
                     )}
 
-    					<form onSubmit={handleSubmit}>
+                        <form onSubmit={handleSubmit}>
                             <div className="grid gap-3 mb-6">
                                 <div className="flex flex-col gap-1">
                                     <label className="font-medium" htmlFor="booking-name">Name</label>
@@ -561,13 +561,12 @@ export default function BookingClient() {
                                 </div>
                             </div>
 
-                        {/* Removed the previous form context */}
                         <div className="grid gap-3 mb-6">
                             {loadingServices && <p>Loading services…</p>}
-                            {fetchError && <p className="text-red-600">{fetchError}</p>}
+                            {fetchError && <p className="text-stone-950">{fetchError}</p>}
 
                             {!loadingServices && services.length === 0 && (
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-sm text-stone-950">
                                     No services available at the moment.
                                 </p>
                             )}
@@ -580,16 +579,14 @@ export default function BookingClient() {
                                         type="button"
                                         key={svc._id || svc.name}
                                         onClick={() => toggleService(svc.name)}
-                                                                        className={`flex items-center justify-between p-4 rounded border transition text-stone-950 dark:text-white
-                    ${active ? 'border-emerald-600 bg-emerald-50' : 'border-gray-300 bg-white'}
-                `}
+												className={`flex items-center justify-between p-4 rounded border transition bg-cyan-100 text-stone-950 ${active ? 'font-semibold' : ''}`}
                                     >
                                         <div className="flex items-center gap-3">
                                             <ServiceIcon name={svc.name} />
                                             <div className="text-left">
                                                 <p className="font-medium">{svc.name}</p>
                                                 {svc.description && (
-                                                    <p className="text-xs text-muted-foreground">
+                                                    <p className="text-xs text-stone-950">
                                                         {svc.description}
                                                     </p>
                                                 )}

@@ -2,15 +2,11 @@
 
 import Link from "next/link";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
-// theme toggle removed
 
 export default function Navbar() {
-  // theme toggle removed
-
   return (
-    <header className="card text-stone-950 dark:text-white sticky top-0 z-40">
-      <div className=" card max-w-6xl mx-auto px-4 py-3 flex items-center justify-between relative">
-        {/* Left: logo */}
+    <header className="card text-stone-950 sticky top-0 z-40">
+      <div className="card max-w-6xl mx-auto px-4 py-3 flex items-center justify-between relative">
         <div className="flex items-center gap-3 -ml-4 md:ml-0">
           <Link href="/" className="flex items-center">
             <div style={{ width: 180, height: 72 }} aria-hidden={false}>
@@ -25,20 +21,14 @@ export default function Navbar() {
               <img src="/logo.svg" alt="QuickClean" width="180" height="72" />
             </noscript>
           </Link>
-
-          {/* Desktop nav intentionally removed */}
         </div>
 
-        {/* Center: site title */}
         <div className="absolute left-1/2 transform -translate-x-1/2 pointer-events-none">
           <Link href="/" className="pointer-events-auto">
-            <span className="font-semibold text-lg text-stone-950 dark:text-white">Quick Clean</span>
+            <span className="font-semibold text-lg text-stone-950">Quick Clean</span>
           </Link>
         </div>
-
-        {/* Controls removed */}
       </div>
-      {/* Mobile menu intentionally removed */}
     </header>
   );
 }

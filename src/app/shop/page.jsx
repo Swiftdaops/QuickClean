@@ -67,8 +67,8 @@ function ShopPageInner() {
 		setCartOpen(true);
 		toast.success(
 			<div className="flex items-center gap-3">
-				<div className="text-sm text-gray-500">Added</div>
-				<div className="font-semibold text-black dark:text-white truncate">{product.name || 'Item'}</div>
+				<div className="text-sm text-stone-950">Added</div>
+				<div className="font-semibold text-stone-950 truncate">{product.name || 'Item'}</div>
 			</div>
 		);
 	}

@@ -1,23 +1,23 @@
 @import "tailwindcss";
 
-/* CSS variables for optional non-Tailwind fallbacks.
-   Avoid forcing body background here so Tailwind's utility classes control backgrounds.
+@layer base {
+  html,
+  body {
+    @apply !bg-cyan-100 !text-stone-950;
+  }
 
-/* Expose theme variables for inline usage where needed. These will be updated
-   by the `dark` class (next-themes) or by the user's OS preference as a fallback. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  *:not(svg):not(path):not(img):not(video):not(canvas) {
+    @apply !bg-cyan-100 !text-stone-950;
+    border-color: currentColor !important;
+  }
+
+  ::placeholder {
+    @apply !text-stone-950;
+    opacity: 1;
   }
 }
 
-
-
-
 .card {
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    background-color: rgba(74, 144, 226, 0.75);
-    border: 1px solid rgba(209, 213, 219, 0.3);
+  background-color: transparent;
+  border: 1px solid currentColor;
 }

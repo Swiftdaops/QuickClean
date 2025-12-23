@@ -1,14 +1,6 @@
 "use client";
 
 import React from 'react';
-
-/**
- * @typedef {import('@/lib/cart').CartPayload} CartPayload
- */
-
-/**
- * @param {{ cart: CartPayload }} props
- */
 export default function OrderSummary({ cart }) {
   if (!cart) return null;
 
@@ -24,11 +16,11 @@ export default function OrderSummary({ cart }) {
   );
 
   return (
-    <div className="mb-6 p-4 rounded border bg-white/70 dark:bg-black/40">
+    <div className="mb-6 p-4 rounded border bg-cyan-100 text-stone-950">
       <h3 className="font-semibold mb-2">Order Summary</h3>
 
       {baseItems.length > 0 && (
-        <ul className="space-y-2 text-sm border-2 border-green-600 rounded-md p-2">
+        <ul className="space-y-2 text-sm border rounded-md p-2">
           {baseItems.map((it) => {
             const qty = Number(it.qty || 1);
             const unit = Number(it.unitPrice ?? 0);
@@ -58,7 +50,7 @@ export default function OrderSummary({ cart }) {
       )}
 
       {serviceItems.length > 0 && (
-        <div className="mt-2 border-2 border-green-600 rounded-md p-2">
+        <div className="mt-2 border rounded-md p-2">
           <p className="text-xs font-semibold mb-1">Services</p>
           <ul className="space-y-1 text-sm">
             {serviceItems.map((it) => {
@@ -107,7 +99,7 @@ export default function OrderSummary({ cart }) {
         </div>
       </div>
 
-      <p className="mt-3 text-xs text-muted-foreground">
+      <p className="mt-3 text-xs text-stone-950">
         To have these items delivered, please also select the
         {' '}<strong>Help Me Buy Pack</strong> service below.
       </p>

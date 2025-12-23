@@ -520,8 +520,8 @@ export default function BookingClient() {
     }
 
     return (
-        <div className="p-6 md:p-12 max-w-4xl mx-auto bg-cyan-100 dark:bg-[#677d7e] text-stone-950 dark:text-white ">
-            <Card className="shadow-lg bg-cyan-100 dark:bg-[#677d7e] text-stone-950 dark:text-white">
+        <div className="p-6 md:p-12 max-w-4xl mx-auto bg-cyan-100 dark:bg-[#677d7e] text-stone-950 ">
+            <Card className="shadow-lg bg-cyan-100 dark:bg-[#677d7e] text-stone-950 ">
                 <CardHeader>
                     <CardTitle className="text-2xl">Book a Service</CardTitle>
                 </CardHeader>
@@ -580,9 +580,9 @@ export default function BookingClient() {
                                         type="button"
                                         key={svc._id || svc.name}
                                         onClick={() => toggleService(svc.name)}
-                                        className={`flex items-center justify-between p-4 rounded border transition
-          ${active ? 'border-emerald-600 bg-emerald-50' : 'border-gray-300 bg-white'}
-        `}
+                                                                        className={`flex items-center justify-between p-4 rounded border transition text-stone-950 dark:text-white
+                    ${active ? 'border-emerald-600 bg-emerald-50' : 'border-gray-300 bg-white'}
+                `}
                                     >
                                         <div className="flex items-center gap-3">
                                             <ServiceIcon name={svc.name} />

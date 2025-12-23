@@ -7,6 +7,7 @@ import { toast } from "@/components/ui/sonner";
 import authFetch from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import posthog from 'posthog-js';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -100,11 +101,24 @@ export default function AdminBookingsPage() {
 	async function handleDeleteBooking(id) {
 		const ok = confirm('Delete booking? This cannot be undone.');
 		if (!ok) return;
+
+		// Find booking details for tracking
+		const bookingToDelete = rawBookings.find((b) => b._id === id);
+
 		try {
 			const del = await authFetch(`${apiBase}/api/bookings/admin/${id}`, { method: 'DELETE' });
 			if (del.status === 401) { setIsAdmin(false); toast.error('Unauthorized — please login as admin'); return; }
 			const dj = await del.json().catch(() => ({}));
 			if (!del.ok) throw new Error(dj.error || 'Could not delete booking');
+
+			// Track booking deletion
+			posthog.capture('booking_deleted', {
+				booking_id: id,
+				customer_name: bookingToDelete?.customer?.name || bookingToDelete?.name || null,
+				booking_status: bookingToDelete?.status || null,
+				booking_total: computeBookingTotal(bookingToDelete),
+			});
+
 			setRawBookings((prev) => {
 				const updated = prev.filter((it) => it._id !== id);
 				setGroups(groupBookings(updated));
@@ -179,6 +193,11 @@ export default function AdminBookingsPage() {
 			toast.error("You must be logged in as admin to change status");
 			return;
 		}
+
+		// Find booking details for tracking
+		const bookingToUpdate = rawBookings.find((b) => b._id === id);
+		const previousStatus = bookingToUpdate?.status || 'unknown';
+
 		try {
 			const res = await authFetch(`${apiBase}/api/bookings/admin/${id}/status`, {
 				method: "PATCH",
@@ -192,6 +211,16 @@ export default function AdminBookingsPage() {
 			}
 			const j = await res.json();
 			if (!res.ok) throw new Error(j.error || "Could not update status");
+
+			// Track status update
+			posthog.capture('booking_status_updated', {
+				booking_id: id,
+				previous_status: previousStatus,
+				new_status: newStatus,
+				customer_name: bookingToUpdate?.customer?.name || bookingToUpdate?.name || null,
+				booking_total: computeBookingTotal(bookingToUpdate),
+			});
+
 			setRawBookings((prev) => {
 				const updated = prev.map((it) => (it._id === id ? (j.booking || it) : it));
 				setGroups(groupBookings(updated));

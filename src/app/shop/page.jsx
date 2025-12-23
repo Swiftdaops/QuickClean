@@ -7,6 +7,7 @@ import CategoriesFilter from '@/components/CategoriesFilter';
 import { CATEGORIES, findCategoryByKey } from '@/lib/categories';
 import { toast } from '@/components/ui/sonner';
 import { buildCartPayload, saveCart } from '@/lib/cart';
+import posthog from 'posthog-js';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -44,6 +45,8 @@ function ShopPageInner() {
 
 
 	function addToCart(product) {
+		const currentQty = cart[String(product._id)] || 0;
+
 		setCart((c) => {
 			const id = String(product._id);
 			const next = { ...c };
@@ -51,6 +54,15 @@ function ShopPageInner() {
 			return next;
 		});
 
+		// Track product added to cart
+		posthog.capture('product_added_to_cart', {
+			product_id: product._id,
+			product_name: product.name,
+			product_price: Number(product.price || 0),
+			product_category: product.category || inferCategoryFor(product),
+			quantity_in_cart: currentQty + 1,
+			store_name: store?.name || null,
+		});
 
 		setCartOpen(true);
 		toast.success(
@@ -62,6 +74,16 @@ function ShopPageInner() {
 	}
 
 	function removeFromCart(productId) {
+		const prod = products.find((p) => String(p._id) === String(productId)) || { name: 'Unknown', price: 0 };
+
+		// Track product removed from cart
+		posthog.capture('product_removed_from_cart', {
+			product_id: productId,
+			product_name: prod.name,
+			product_price: Number(prod.price || 0),
+			store_name: store?.name || null,
+		});
+
 		setCart((c) => {
 			const next = { ...c };
 			delete next[String(productId)];
@@ -71,6 +93,30 @@ function ShopPageInner() {
 
 	function cartCount() {
 		return Object.values(cart).reduce((s, v) => s + v, 0);
+	}
+
+	function handleClearCart() {
+		const entries = Object.entries(cart);
+		const itemsCount = entries.length;
+		const totalQuantity = entries.reduce((sum, [, qty]) => sum + qty, 0);
+
+		// Track cart cleared
+		posthog.capture('cart_cleared', {
+			items_count: itemsCount,
+			total_quantity: totalQuantity,
+			store_name: store?.name || null,
+		});
+
+		setCart({});
+	}
+
+	function handleStoreSelect(selectedStore) {
+		// Track store selection
+		posthog.capture('store_selected', {
+			store_id: selectedStore._id,
+			store_name: selectedStore.name,
+			store_location: selectedStore.location || selectedStore.address || null,
+		});
 	}
 
 	function inferCategoryFor(product) {
@@ -109,6 +155,17 @@ function ShopPageInner() {
 				qty,
 				subtotal: unitPrice * qty,
 			};
+		});
+
+		const cartTotal = items.reduce((sum, it) => sum + (it.subtotal || 0), 0);
+
+		// Track checkout initiated
+		posthog.capture('checkout_initiated', {
+			store_name: store.name,
+			items_count: items.length,
+			total_quantity: items.reduce((sum, it) => sum + it.qty, 0),
+			cart_total: cartTotal,
+			product_names: items.map(it => it.name),
 		});
 
 		const payload = buildCartPayload(store.name, items);
@@ -247,7 +304,7 @@ function ShopPageInner() {
 													<div className="font-semibold">Cart</div>
 													<div className="flex items-center gap-2">
 														<button onClick={() => setCartOpen(false)} className="text-sm px-2 py-1">Close</button>
-														<button onClick={() => setCart({})} className="text-sm text-red-600 px-2 py-1">Clear</button>
+														<button onClick={handleClearCart} className="text-sm text-red-600 px-2 py-1">Clear</button>
 													</div>
 												</div>
 												{Object.keys(cart).length === 0 ? (
@@ -346,7 +403,12 @@ function ShopPageInner() {
 								<p className=" mb-4">No store selected. You can pick a store from the list below.</p>
 								<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
 									{stores.map((s) => (
-										<a key={s._id} href={`/shop?store=${encodeURIComponent(s.name)}`} className="block p-4 rounded shadow hover:shadow-md">
+										<a
+											key={s._id}
+											href={`/shop?store=${encodeURIComponent(s.name)}`}
+											onClick={() => handleStoreSelect(s)}
+											className="block p-4 rounded shadow hover:shadow-md"
+										>
 											<div className="font-semibold">{s.name}</div>
 											<div className=" ">{s.location || s.address}</div>
 										</a>

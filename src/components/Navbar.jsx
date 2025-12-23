@@ -2,11 +2,21 @@
 
 import Link from "next/link";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
-// theme toggle removed
+import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
+import { Sun, Moon } from 'lucide-react';
 
 export default function Navbar() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  // no client theme state here
+  useEffect(() => setMounted(true), []);
+
+  const toggleTheme = () => {
+    if (!mounted) return;
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+  };
 
   return (
     <header className="card text-stone-950 dark:text-white sticky top-0 z-40">
@@ -37,8 +47,21 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* Controls placeholder (no theme toggle) */}
-        <div className="flex items-center gap-2" />
+        {/* Controls: theme toggle */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="Toggle theme"
+            onClick={toggleTheme}
+            className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+          >
+            {mounted && (theme === 'dark') ? (
+              <Sun className="w-5 h-5" />
+            ) : (
+              <Moon className="w-5 h-5" />
+            )}
+          </button>
+        </div>
       </div>
       {/* Mobile menu intentionally removed */}
     </header>

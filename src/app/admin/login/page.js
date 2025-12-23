@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import posthog from 'posthog-js';
 
 export default function AdminLoginPage() {
 	const [username, setUsername] = useState('');
@@ -15,6 +16,12 @@ export default function AdminLoginPage() {
 		e.preventDefault();
 		setLoading(true);
 		setError(null);
+
+		// Track login attempt
+		posthog.capture('admin_login_attempted', {
+			username: username,
+		});
+
 		try {
 			const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
 			const res = await fetch(`${apiBase}/api/admin/login`, {
@@ -36,6 +43,14 @@ export default function AdminLoginPage() {
 						msg = text?.slice(0, 300) || msg;
 					}
 				} catch {}
+
+				// Track login failure
+				posthog.capture('admin_login_failed', {
+					username: username,
+					error_message: msg,
+					http_status: res.status,
+				});
+
 				throw new Error(msg);
 			}
 			// If API returns a token, sync it with AuthContext so ProtectedRoute lets us in
@@ -56,6 +71,16 @@ export default function AdminLoginPage() {
 					}
 				}
 			} catch {}
+
+			// Identify the admin user and track successful login
+			posthog.identify(username, {
+				username: username,
+				role: 'admin',
+			});
+			posthog.capture('admin_login_success', {
+				username: username,
+			});
+
 			router.push('/admin/dashboard');
 		} catch (err) {
 			setError(err.message);

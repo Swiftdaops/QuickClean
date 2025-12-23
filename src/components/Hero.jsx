@@ -3,6 +3,7 @@ import React from 'react';
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import posthog from 'posthog-js';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 export default function Hero() {
@@ -51,6 +52,14 @@ export default function Hero() {
 
     const handleBookingClick = (e) => {
         e.preventDefault();
+
+        // Track CTA click
+        posthog.capture('cta_clicked', {
+            cta_type: 'quick_clean_services',
+            cta_text: 'Quick Clean Services',
+            destination: '/booking',
+        });
+
         const url = 'https://res.cloudinary.com/dnitzkowt/video/upload/v1766391771/water-splash-02-352021_lhlh3q.mp3';
         try {
             const audio = new Audio(url);
@@ -72,6 +81,14 @@ export default function Hero() {
 
     const handleShopClick = (e) => {
         e.preventDefault();
+
+        // Track CTA click
+        posthog.capture('cta_clicked', {
+            cta_type: 'help_me_buy',
+            cta_text: 'Help Me Buy Something',
+            destination: '/shop?store=Chijohnz supermarket',
+        });
+
         const url = 'https://res.cloudinary.com/dnitzkowt/video/upload/v1766339273/new-notification-3-398649_pxhiar.mp3';
         try {
             const audio = new Audio(url);

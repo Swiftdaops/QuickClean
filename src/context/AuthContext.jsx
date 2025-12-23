@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import posthog from 'posthog-js';
 
 const AuthContext = createContext(null);
 
@@ -35,6 +36,11 @@ export function AuthProvider({ children }) {
 	}
 
 	function logout() {
+		// Track logout event before resetting
+		posthog.capture('admin_logged_out');
+		// Reset PostHog to unlink future events from this user
+		posthog.reset();
+
 		try {
 			if (typeof window !== "undefined") {
 				try { localStorage.removeItem("adminToken"); } catch (e) {}

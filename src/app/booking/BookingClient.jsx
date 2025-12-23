@@ -8,6 +8,7 @@ import { toast } from "@/components/ui/sonner";
 import { playProductAddedSound } from "@/lib/sound";
 import Splash from '@/components/Splash';
 import OrderSummary from '@/components/OrderSummary';
+import posthog from 'posthog-js';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -287,6 +288,17 @@ export default function BookingClient() {
     }
 
     function toggleService(name) {
+        const wasSelected = selected.includes(name);
+        const svcObj = services.find((x) => x.name === name) || { name, price: 0 };
+
+        // Track service selection/deselection
+        posthog.capture('service_selected', {
+            service_name: name,
+            service_price: Number(svcObj.price || 0),
+            action: wasSelected ? 'deselected' : 'selected',
+            selected_services_count: wasSelected ? selected.length - 1 : selected.length + 1,
+        });
+
         setSelected((prev) =>
             prev.includes(name)
                 ? prev.filter((n) => n !== name)
@@ -400,6 +412,23 @@ export default function BookingClient() {
             const j = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(j.error || j.message || 'Booking failed');
             toast.success('Booking created — we will contact you');
+
+            // Track booking submission
+            const bookingId = j?.booking?._id || (Array.isArray(j?.bookings) && j.bookings[0]?._id) || j?._id || j?.id || '';
+            posthog.capture('booking_submitted', {
+                booking_id: bookingId,
+                customer_name: name,
+                customer_phone: phone,
+                services_selected: selected,
+                services_count: selected.length,
+                items_count: items ? items.length : 0,
+                items_total: itemsTotal,
+                services_total: servicesTotal,
+                total_amount: totalAmount,
+                store: orderData?.store || selectedStore || null,
+                has_notes: Boolean(formData.notes),
+                preferred_date: formData.date || null,
+            });
 
             let adminWhatsApp = (process.env.NEXT_PUBLIC_ADMIN_WHATSAPP || '').trim();
             try {
